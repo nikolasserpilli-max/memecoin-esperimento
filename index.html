@@ -69,7 +69,11 @@ const eur=v=>(v<0?'-':'')+'€'+Math.abs(v).toLocaleString('en-US',{minimumFract
 const tm=t=>new Date(t*1000).toLocaleTimeString('it-IT',{timeZone:'Europe/Rome',hour12:false});
 const dur=s=>s<60?Math.round(s)+'s':Math.floor(s/60)+'m '+String(Math.round(s%60)).padStart(2,'0')+'s';
 const fmtv=v=>v>=1000?'€'+(v/1000).toFixed(1)+'k':'€'+v.toFixed(2);
-async function load(){try{const r=await fetch('data/live.json?t='+Date.now(),{cache:'no-store'});D=await r.json();render()}catch(e){$('age').textContent='dati non disponibili';$('age').classList.add('stale')}}
+const REMOTE=location.hostname.endsWith('github.io');const REPO='nikolasserpilli-max/memecoin-esperimento';
+async function getData(){if(!REMOTE){const r=await fetch('data/live.json?t='+Date.now(),{cache:'no-store'});return r.json()}
+try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/live.json?ref=data`,{headers:{Accept:'application/vnd.github.raw+json'},cache:'no-cache'});if(r.ok)return r.json()}catch(e){}
+const r=await fetch(`https://raw.githubusercontent.com/${REPO}/data/live.json?t=`+Date.now());return r.json()}
+async function load(){try{D=await getData();render()}catch(e){$('age').textContent='dati non disponibili';$('age').classList.add('stale')}}
 function render(){const s=D.summary;hist=D.history;ops=D.ops_s||1;
 $('sub').textContent=`GROK · 6 AGENTS · ${D.universe} MEMECOINS · BINANCE SPOT`;
 $('bal').textContent=eur(s.balance);$('bal2').textContent=eur(s.balance);
@@ -115,5 +119,5 @@ function beat(u){u=((u%1)+1)%1;if(u<.1)return Math.sin(u/.1*Math.PI)*.12;if(u<.1
 function ecg(now){const r=ec.getBoundingClientRect(),dpr=devicePixelRatio||1;if(ec.width!==Math.round(r.width*dpr)){ec.width=r.width*dpr;ec.height=r.height*dpr}ex.setTransform(dpr,0,0,dpr,0,0);
 const W=r.width,H=r.height;ph+=(now-last)/1000*(0.6+Math.min(ops,200)/60);last=now;ex.clearRect(0,0,W,H);ex.strokeStyle='#c6f432';ex.lineWidth=1.6;ex.shadowColor='#c6f432';ex.shadowBlur=6;ex.beginPath();
 const per=W<500?70:56;for(let x=0;x<=W;x+=1.5){const y=H*.62-beat(x/per-ph)*H*.55;x?ex.lineTo(x,y):ex.moveTo(x,y)}ex.stroke();ex.shadowBlur=0;ex.fillStyle='#c6f432';ex.beginPath();ex.arc(W-4,H*.62-beat(W/per-ph)*H*.55,3,0,7);ex.fill();requestAnimationFrame(ecg)}
-requestAnimationFrame(ecg);load();setInterval(load,15000);
+requestAnimationFrame(ecg);load();setInterval(load,REMOTE?75000:15000);
 </script></body></html>
